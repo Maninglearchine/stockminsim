@@ -310,7 +310,8 @@
 
     document.getElementById('stockName').textContent = d.name;
     document.getElementById('stockCode').textContent = d.code;
-    document.getElementById('updatedAt').textContent = d.updated_at + ' 기준';
+    document.getElementById('updatedAt').textContent =
+      d.updated_at + ' 기준' + (d.cached ? ' (캐시)' : '');
 
     const signalEl = document.getElementById('signalText');
     signalEl.textContent = (isBuy ? '매수' : '매도') + ' 민심 우세';

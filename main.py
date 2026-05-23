@@ -1,6 +1,8 @@
 from contextlib import asynccontextmanager
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+KST = timezone(timedelta(hours=9))
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
@@ -25,14 +27,14 @@ def _get_cache(key: str) -> dict | None:
     entry = _cache.get(key)
     if entry:
         data, expires_at = entry
-        if datetime.now() < expires_at:
+        if datetime.now(KST) < expires_at:
             return data
         del _cache[key]
     return None
 
 
 def _set_cache(key: str, data: dict, ttl: int = _CACHE_TTL_SECONDS) -> None:
-    _cache[key] = (data, datetime.now() + timedelta(seconds=ttl))
+    _cache[key] = (data, datetime.now(KST) + timedelta(seconds=ttl))
 
 
 _LOCAL_MODEL = BASE_DIR / "models" / "KR-FinBert-SC"
@@ -90,7 +92,11 @@ async def analyze_stock(code: str, pages: int = 10) -> JSONResponse:
     cache_key = f"{code}:{pages}"
     cached = _get_cache(cache_key)
     if cached:
-        return JSONResponse({**cached, "cached": True})
+        return JSONResponse({
+            **cached,
+            "updated_at": datetime.now(KST).strftime("%H:%M"),
+            "cached": True,
+        })
 
     loop = asyncio.get_event_loop()
     try:
@@ -126,7 +132,7 @@ async def analyze_stock(code: str, pages: int = 10) -> JSONResponse:
         "confidence": result["confidence"],
         "evidence": result["evidence"],
         "analyzed_count": result["analyzed_count"],
-        "updated_at": datetime.now().strftime("%H:%M"),
+        "updated_at": datetime.now(KST).strftime("%H:%M"),
         "pages": pages,
         "cached": False,
     }
