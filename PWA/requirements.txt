@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+FinanceDataReader
+requests
+beautifulsoup4
+chardet
+transformers
+torch
+numpy
+pandas
+jinja2
+python-multipart

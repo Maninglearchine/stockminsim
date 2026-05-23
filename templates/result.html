@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>네이버 종토방 민심 검색 봇 — 결과</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d0d;
+      --surface: #1a1a1a;
+      --surface2: #202020;
+      --border: #2e2e2e;
+      --text: #f0f0f0;
+      --muted: #888;
+      --buy: #4ade80;
+      --sell: #f87171;
+      --badge-buy-bg: rgba(74,222,128,0.12);
+      --badge-sell-bg: rgba(248,113,113,0.12);
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100dvh;
+      padding: 24px 16px 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .page-wrap {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* 헤더 */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0 4px;
+    }
+
+    .brand { font-size: 0.85rem; color: var(--muted); font-weight: 600; letter-spacing: 0.05em; }
+
+    .updated-at { font-size: 0.75rem; color: var(--muted); }
+
+    /* 종목 카드 */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+    }
+
+    .stock-header {
+      margin-bottom: 20px;
+    }
+
+    .stock-name {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+
+    .stock-code {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    /* 민심 판단 */
+    .signal-block {
+      text-align: center;
+      padding: 28px 0 24px;
+    }
+
+    .signal-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+
+    .signal-text {
+      font-size: 2.6rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+
+    .signal-text.buy { color: var(--buy); }
+    .signal-text.sell { color: var(--sell); }
+
+    .signal-sub {
+      margin-top: 6px;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    /* 신호 강도 */
+    .strength-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 14px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .strength-badge.buy { background: var(--badge-buy-bg); color: var(--buy); border: 1px solid rgba(74,222,128,0.25); }
+    .strength-badge.sell { background: var(--badge-sell-bg); color: var(--sell); border: 1px solid rgba(248,113,113,0.25); }
+
+    .strength-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+
+    .strength-badge.buy .strength-dot { background: var(--buy); }
+    .strength-badge.sell .strength-dot { background: var(--sell); }
+
+    /* 근거 의견 */
+    .section-title {
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 12px;
+    }
+
+    .evidence-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .evidence-item {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+
+    .evidence-num {
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 700;
+      margin-top: 1px;
+    }
+
+    .evidence-num.buy { background: var(--badge-buy-bg); color: var(--buy); }
+    .evidence-num.sell { background: var(--badge-sell-bg); color: var(--sell); }
+
+    .evidence-text {
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    /* 분석 기준 */
+    .meta-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .meta-item {
+      font-size: 0.8rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .meta-item::before {
+      content: "";
+      display: inline-block;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    /* 유의사항 */
+    .notice {
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    /* 홈 버튼 */
+    .btn-home {
+      display: block;
+      width: 100%;
+      padding: 15px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      color: var(--text);
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-home:hover { background: var(--surface2); }
+
+    /* 에러 상태 */
+    .error-page {
+      text-align: center;
+      padding: 60px 16px;
+    }
+    .error-page h2 { margin-bottom: 12px; color: var(--muted); }
+    .error-page p { font-size: 0.9rem; color: var(--muted); margin-bottom: 24px; }
+  </style>
+</head>
+<body>
+
+<div class="page-wrap" id="resultWrap" style="display:none;">
+
+  <div class="header">
+    <span class="brand">네이버 종토방 민심 검색 봇</span>
+    <span class="updated-at" id="updatedAt"></span>
+  </div>
+
+  <!-- 종목 + 신호 카드 -->
+  <div class="card">
+    <div class="stock-header">
+      <div class="stock-name" id="stockName"></div>
+      <div class="stock-code" id="stockCode"></div>
+    </div>
+
+    <div class="signal-block">
+      <div class="signal-label">토론방 민심 판단</div>
+      <div class="signal-text" id="signalText"></div>
+      <div class="signal-sub" id="signalSub"></div>
+      <span class="strength-badge" id="strengthBadge">
+        <span class="strength-dot"></span>
+        <span id="strengthText"></span>
+      </span>
+    </div>
+  </div>
+
+  <!-- 근거 의견 -->
+  <div class="card">
+    <p class="section-title">근거 의견 TOP 5</p>
+    <ul class="evidence-list" id="evidenceList"></ul>
+  </div>
+
+  <!-- 분석 기준 -->
+  <div class="card">
+    <p class="section-title">분석 기준</p>
+    <ul class="meta-list">
+      <li class="meta-item">최근 종목토론방 10페이지</li>
+      <li class="meta-item">게시글 제목 기준</li>
+      <li class="meta-item">추천수 가중치 반영</li>
+      <li class="meta-item">AI 감정분석 모델 사용</li>
+      <li class="meta-item" id="analyzedCount"></li>
+    </ul>
+  </div>
+
+  <!-- 유의사항 -->
+  <div class="card">
+    <p class="section-title">유의사항</p>
+    <p class="notice">
+      이 결과는 온라인 게시글 제목과 추천수 기반의 민심 분석 결과입니다.
+      실제 투자 판단은 가격, 거래량, 재무정보, 공시, 뉴스, 본인의 투자성향을 함께 고려해야 합니다.
+      투자 권유 또는 수익 보장을 의미하지 않습니다.
+    </p>
+  </div>
+
+  <a class="btn-home" href="/">홈으로 돌아가기</a>
+
+</div>
+
+<!-- 에러 상태 -->
+<div class="error-page" id="errorPage" style="display:none;">
+  <h2>결과를 불러올 수 없습니다</h2>
+  <p>분석 결과 데이터가 없습니다.<br>홈으로 돌아가 다시 검색해 주세요.</p>
+  <a class="btn-home" href="/">홈으로 돌아가기</a>
+</div>
+
+<script>
+  const raw = sessionStorage.getItem('stockResult');
+
+  if (!raw) {
+    document.getElementById('errorPage').style.display = 'block';
+  } else {
+    const d = JSON.parse(raw);
+    const isBuy = d.signal === '매수';
+    const cls = isBuy ? 'buy' : 'sell';
+
+    document.getElementById('stockName').textContent = d.name;
+    document.getElementById('stockCode').textContent = d.code;
+    document.getElementById('updatedAt').textContent = d.updated_at + ' 기준';
+
+    const signalEl = document.getElementById('signalText');
+    signalEl.textContent = (isBuy ? '매수' : '매도') + ' 민심 우세';
+    signalEl.classList.add(cls);
+
+    const sub = document.getElementById('signalSub');
+    if (d.strength === '약함') {
+      sub.textContent = '다만 신호 강도는 약함';
+    }
+
+    const badge = document.getElementById('strengthBadge');
+    badge.classList.add(cls);
+    document.getElementById('strengthText').textContent = '신호 강도 ' + d.strength;
+
+    const list = document.getElementById('evidenceList');
+    (d.evidence || []).forEach((text, i) => {
+      const li = document.createElement('li');
+      li.className = 'evidence-item';
+      li.innerHTML = `
+        <span class="evidence-num ${cls}">${i + 1}</span>
+        <span class="evidence-text">${escHtml(text)}</span>
+      `;
+      list.appendChild(li);
+    });
+
+    document.getElementById('analyzedCount').textContent =
+      `분석 게시글 수: ${d.analyzed_count}건`;
+
+    document.getElementById('resultWrap').style.display = 'flex';
+  }
+
+  function escHtml(str) {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+</script>
+</body>
+</html>

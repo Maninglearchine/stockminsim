@@ -1,0 +1,46 @@
+# ML 모델 (대용량)
+models/
+PWA/models/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# 환경
+.env
+.venv
+venv/
+env/
+
+# 로그
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+*.lnk
+*.url
+
+# Claude Code 내부 설정
+.claude/
+
+# Jupyter 체크포인트
+.ipynb_checkpoints/
+
+# 테스트 임시
+/tmp/
+
+# 개인 파일
+*.zip
+*.jpg
+*.jpeg
+*.docx
+*.lnk
+*.url
+browser_test.py

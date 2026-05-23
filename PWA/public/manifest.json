@@ -1,0 +1,19 @@
+{
+  "name": "네이버 종토방 민심 검색 봇",
+  "short_name": "종토방 봇",
+  "description": "종목토론방 민심을 AI로 분석합니다",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0d0d0d",
+  "theme_color": "#4ade80",
+  "icons": [
+    {
+      "src": "/image/img0.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

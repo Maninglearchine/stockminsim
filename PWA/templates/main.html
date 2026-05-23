@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>네이버 종토방 민심 검색 봇</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#4ade80" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="종토방 봇" />
+  <link rel="apple-touch-icon" href="/image/img0.png" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d0d;
+      --surface: #1a1a1a;
+      --border: #2e2e2e;
+      --text: #f0f0f0;
+      --muted: #888;
+      --accent: #4ade80;
+      --danger: #f87171;
+      --btn-bg: #4ade80;
+      --btn-text: #0d0d0d;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .brand-logo {
+      height: 1.3em;
+      width: auto;
+      display: block;
+    }
+
+    .tagline {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 40px;
+      text-align: center;
+    }
+
+    .search-wrap {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      gap: 8px;
+    }
+
+    #searchInput {
+      flex: 1;
+      padding: 14px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    #searchInput:focus { border-color: var(--accent); }
+    #searchInput::placeholder { color: var(--muted); }
+
+    .btn-primary {
+      padding: 14px 20px;
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      border: none;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: opacity 0.2s;
+    }
+    .btn-primary:active { opacity: 0.8; }
+
+    .disclaimer {
+      margin-top: 32px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-align: center;
+      max-width: 400px;
+      line-height: 1.6;
+    }
+
+    /* 검색 결과 드롭다운 */
+    #searchResults {
+      display: none;
+      width: 100%;
+      max-width: 480px;
+      margin-top: 4px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .result-item {
+      padding: 12px 16px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    .result-item:last-child { border-bottom: none; }
+    .result-item:hover { background: #252525; }
+    .result-name { font-size: 0.95rem; }
+    .result-code { font-size: 0.8rem; color: var(--muted); }
+
+    /* 팝업 공통 */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .overlay.active { display: flex; }
+
+    .popup {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px 24px;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .popup-title {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .stock-name-big {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .stock-code-small {
+      font-size: 0.9rem;
+      color: var(--muted);
+      margin-bottom: 28px;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-secondary {
+      flex: 1;
+      padding: 13px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .btn-secondary:hover { border-color: #555; }
+
+    .btn-primary-full {
+      flex: 2;
+      padding: 13px;
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      border: none;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* 로딩 팝업 */
+    #loadingPopup .popup { text-align: left; }
+
+    .loading-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    .step-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.9rem;
+      color: var(--muted);
+      transition: color 0.3s;
+    }
+
+    .step-item.active { color: var(--text); }
+    .step-item.done { color: var(--accent); }
+
+    .step-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      transition: all 0.3s;
+    }
+
+    .step-item.active .step-dot {
+      border-color: var(--accent);
+      background: var(--accent);
+      animation: pulse 1s infinite;
+    }
+
+    .step-item.done .step-dot {
+      border-color: var(--accent);
+      background: var(--accent);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* 밈 이미지 오버레이 */
+    #memeOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.9);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    #memeOverlay.show { display: flex; }
+
+    #memeImg {
+      max-width: 85vw;
+      max-height: 80vh;
+      border-radius: 16px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      object-fit: contain;
+    }
+
+    .error-msg {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: rgba(248,113,113,0.1);
+      border: 1px solid rgba(248,113,113,0.3);
+      border-radius: 8px;
+      color: var(--danger);
+      font-size: 0.85rem;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="brand">
+    <img src="/image/img0.png" alt="네이버" class="brand-logo">
+    종토방 민심 검색 봇
+  </div>
+  <p class="tagline">종목토론방 민심을 AI로 분석합니다</p>
+
+  <div class="search-wrap">
+    <input
+      id="searchInput"
+      type="text"
+      placeholder="종목명 또는 종목코드 입력"
+      autocomplete="off"
+      autocorrect="off"
+    />
+    <button class="btn-primary" onclick="doSearch()">분석하기</button>
+  </div>
+
+  <div id="searchResults"></div>
+
+  <div id="searchError" class="error-msg"></div>
+
+  <p class="disclaimer">
+    본 서비스는 종목토론방 게시글 기반 민심 분석 도구입니다.<br>
+    투자 권유 또는 수익 보장을 의미하지 않습니다.
+  </p>
+
+  <!-- 종목 확인 팝업 -->
+  <div id="confirmOverlay" class="overlay">
+    <div class="popup">
+      <p class="popup-title">분석 대상 종목</p>
+      <p id="confirmName" class="stock-name-big"></p>
+      <p id="confirmCode" class="stock-code-small"></p>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="closeConfirm()">다시 검색</button>
+        <button class="btn-primary-full" onclick="startAnalyze()">이 종목 분석하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 로딩 팝업 -->
+  <div id="loadingPopup" class="overlay">
+    <div class="popup">
+      <p class="loading-title">종목토론방 민심을 분석 중입니다</p>
+      <ul class="step-list">
+        <li class="step-item" id="step1"><span class="step-dot"></span>게시글 수집 중</li>
+        <li class="step-item" id="step2"><span class="step-dot"></span>추천수 반영 중</li>
+        <li class="step-item" id="step3"><span class="step-dot"></span>AI 감정분석 중</li>
+        <li class="step-item" id="step4"><span class="step-dot"></span>매수/매도 우세 판단 중</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 밈 이미지 -->
+  <div id="memeOverlay">
+    <img id="memeImg" src="" alt="meme" />
+  </div>
+
+<script>
+  if (window.location.protocol === 'file:') {
+    document.body.innerHTML = `
+      <div style="max-width:480px;margin:80px auto;padding:32px 24px;
+                  background:#1a1a1a;border:1px solid #2e2e2e;border-radius:20px;
+                  font-family:-apple-system,sans-serif;color:#f0f0f0;text-align:center;">
+        <div style="font-size:1.1rem;font-weight:700;color:#f87171;margin-bottom:16px;">
+          &#9888; 직접 파일 실행 불가
+        </div>
+        <p style="font-size:0.9rem;color:#aaa;line-height:1.7;margin-bottom:24px;">
+          이 페이지는 <strong>반드시 서버를 통해</strong> 접속해야 합니다.<br>
+          HTML 파일을 직접 열면 API 호출이 차단됩니다.
+        </p>
+        <div style="background:#0d0d0d;border-radius:10px;padding:16px;
+                    font-size:0.85rem;color:#4ade80;text-align:left;">
+          1. <strong>run.bat</strong> 를 더블클릭하여 서버 시작<br>
+          2. 브라우저에서 아래 주소로 접속<br>
+          <span style="color:#fff;">http://localhost:8000</span>
+        </div>
+      </div>`;
+  }
+
+  let selectedStock = null;
+  let buyMemeIdx = parseInt(sessionStorage.getItem('buyMemeIdx') || '0');
+  let sellMemeIdx = parseInt(sessionStorage.getItem('sellMemeIdx') || '0');
+
+  const searchInput = document.getElementById('searchInput');
+  const searchResults = document.getElementById('searchResults');
+  const searchError = document.getElementById('searchError');
+
+  searchInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') doSearch();
+  });
+
+  async function doSearch() {
+    const q = searchInput.value.trim();
+    if (!q) return;
+
+    searchError.style.display = 'none';
+    searchResults.style.display = 'none';
+    searchResults.innerHTML = '';
+
+    try {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
+      if (!res.ok) {
+        const err = await res.json();
+        showError(err.detail || '검색 결과가 없습니다.');
+        return;
+      }
+      const data = await res.json();
+      renderResults(data.results);
+    } catch (e) {
+      showError('검색 중 오류가 발생했습니다.');
+    }
+  }
+
+  function showError(msg) {
+    searchError.textContent = msg;
+    searchError.style.display = 'block';
+  }
+
+  function renderResults(results) {
+    if (!results || results.length === 0) {
+      showError('검색 결과가 없습니다.');
+      return;
+    }
+
+    if (results.length === 1) {
+      selectStock(results[0]);
+      return;
+    }
+
+    searchResults.innerHTML = '';
+    results.forEach(stock => {
+      const item = document.createElement('div');
+      item.className = 'result-item';
+      item.innerHTML = `
+        <span class="result-name">${stock.name}</span>
+        <span class="result-code">${stock.code}</span>
+      `;
+      item.addEventListener('click', () => {
+        searchResults.style.display = 'none';
+        selectStock(stock);
+      });
+      searchResults.appendChild(item);
+    });
+    searchResults.style.display = 'block';
+  }
+
+  function selectStock(stock) {
+    selectedStock = stock;
+    document.getElementById('confirmName').textContent = stock.name;
+    document.getElementById('confirmCode').textContent = stock.code;
+    document.getElementById('confirmOverlay').classList.add('active');
+  }
+
+  function closeConfirm() {
+    document.getElementById('confirmOverlay').classList.remove('active');
+    selectedStock = null;
+  }
+
+  async function startAnalyze() {
+    if (!selectedStock) return;
+    document.getElementById('confirmOverlay').classList.remove('active');
+    showLoading();
+
+    try {
+      const res = await fetch(`/api/analyze?code=${selectedStock.code}`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        hideLoading();
+        showError(data.detail || '분석 중 오류가 발생했습니다.');
+        return;
+      }
+
+      completeLoading();
+      await showMeme(data.signal);
+      sessionStorage.setItem('stockResult', JSON.stringify(data));
+      window.location.href = '/result';
+
+    } catch (e) {
+      hideLoading();
+      showError('분석 중 오류가 발생했습니다.');
+    }
+  }
+
+  const STEP_DELAYS = [0, 2500, 6000, 10000];
+
+  let stepTimers = [];
+
+  function showLoading() {
+    ['step1','step2','step3','step4'].forEach(id => {
+      const el = document.getElementById(id);
+      el.classList.remove('active', 'done');
+      el.querySelector('.step-dot').textContent = '';
+    });
+
+    document.getElementById('loadingPopup').classList.add('active');
+
+    stepTimers.forEach(clearTimeout);
+    stepTimers = [];
+
+    STEP_DELAYS.forEach((delay, idx) => {
+      const t = setTimeout(() => activateStep(idx + 1), delay);
+      stepTimers.push(t);
+    });
+  }
+
+  function activateStep(n) {
+    for (let i = 1; i < n; i++) {
+      const el = document.getElementById(`step${i}`);
+      el.classList.remove('active');
+      el.classList.add('done');
+      el.querySelector('.step-dot').textContent = '✓';
+    }
+    const cur = document.getElementById(`step${n}`);
+    if (cur) cur.classList.add('active');
+  }
+
+  function completeLoading() {
+    stepTimers.forEach(clearTimeout);
+    for (let i = 1; i <= 4; i++) {
+      const el = document.getElementById(`step${i}`);
+      el.classList.remove('active');
+      el.classList.add('done');
+      el.querySelector('.step-dot').textContent = '✓';
+    }
+    document.getElementById('loadingPopup').classList.remove('active');
+  }
+
+  function hideLoading() {
+    stepTimers.forEach(clearTimeout);
+    document.getElementById('loadingPopup').classList.remove('active');
+  }
+
+  async function showMeme(signal) {
+    const buyImgs = ['/image/img1.png', '/image/img2.png'];
+    const sellImgs = ['/image/img3.png', '/image/img4.png'];
+    let src;
+    if (signal === '매수') {
+      src = buyImgs[buyMemeIdx % buyImgs.length];
+      buyMemeIdx++;
+      sessionStorage.setItem('buyMemeIdx', buyMemeIdx);
+    } else {
+      src = sellImgs[sellMemeIdx % sellImgs.length];
+      sellMemeIdx++;
+      sessionStorage.setItem('sellMemeIdx', sellMemeIdx);
+    }
+
+    const overlay = document.getElementById('memeOverlay');
+    const img = document.getElementById('memeImg');
+
+    await new Promise(resolve => {
+      img.onload = resolve;
+      img.onerror = resolve;
+      img.src = src;
+    });
+
+    img.style.transition = 'none';
+    img.style.opacity = '0';
+    overlay.style.display = 'flex';
+
+    await delay(30);
+    img.style.transition = 'opacity 0.3s ease';
+    img.style.opacity = '1';
+    await delay(300);
+    await delay(500);
+    img.style.opacity = '0';
+    await delay(300);
+
+    overlay.style.display = 'none';
+  }
+
+  function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+</script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js');
+  }
+</script>
+</body>
+</html>
