@@ -1,5 +1,6 @@
-import FinanceDataReader as fdr
+import requests
 import pandas as pd
+from bs4 import BeautifulSoup
 
 _df_krx: pd.DataFrame | None = None
 
@@ -7,10 +8,24 @@ _df_krx: pd.DataFrame | None = None
 def load_krx() -> pd.DataFrame:
     global _df_krx
     if _df_krx is None:
-        df = fdr.StockListing("KRX")[["Code", "Name"]]
-        df["Code"] = df["Code"].astype(str).str.zfill(6)
-        df["Name"] = df["Name"].astype(str).str.strip()
-        _df_krx = df
+        resp = requests.get(
+            "https://kind.krx.co.kr/corpgeneral/corpList.do",
+            params={"method": "download", "searchType": "13"},
+            headers={"User-Agent": "Mozilla/5.0"},
+            timeout=15,
+        )
+        resp.encoding = "euc-kr"
+        soup = BeautifulSoup(resp.text, "html.parser")
+        rows = soup.select("table tr")
+        data = []
+        for row in rows[1:]:
+            cols = row.find_all("td")
+            if len(cols) >= 2:
+                name = cols[0].get_text(strip=True)
+                code = str(cols[1].get_text(strip=True)).zfill(6)
+                if name and code:
+                    data.append({"Name": name, "Code": code})
+        _df_krx = pd.DataFrame(data, columns=["Name", "Code"])
     return _df_krx
 
 

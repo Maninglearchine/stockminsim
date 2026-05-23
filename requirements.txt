@@ -1,6 +1,5 @@
 fastapi
 uvicorn[standard]
-FinanceDataReader
 requests
 beautifulsoup4
 chardet
