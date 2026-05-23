@@ -8,24 +8,40 @@ _df_krx: pd.DataFrame | None = None
 def load_krx() -> pd.DataFrame:
     global _df_krx
     if _df_krx is None:
-        resp = requests.get(
-            "https://kind.krx.co.kr/corpgeneral/corpList.do",
-            params={"method": "download", "searchType": "13"},
-            headers={"User-Agent": "Mozilla/5.0"},
-            timeout=15,
-        )
-        resp.encoding = "euc-kr"
-        soup = BeautifulSoup(resp.text, "html.parser")
-        rows = soup.select("table tr")
-        data = []
-        for row in rows[1:]:
-            cols = row.find_all("td")
-            if len(cols) >= 3:
-                name = cols[0].get_text(strip=True)
-                code = str(cols[2].get_text(strip=True)).zfill(6)
-                if name and code:
-                    data.append({"Name": name, "Code": code})
-        _df_krx = pd.DataFrame(data, columns=["Name", "Code"])
+        try:
+            resp = requests.get(
+                "https://kind.krx.co.kr/corpgeneral/corpList.do",
+                params={"method": "download", "searchType": "13"},
+                headers={"User-Agent": "Mozilla/5.0"},
+                timeout=20,
+            )
+            resp.encoding = "euc-kr"
+            soup = BeautifulSoup(resp.text, "html.parser")
+            rows = soup.select("table tr")
+
+            # 헤더에서 종목코드 컬럼 위치 동적 탐지 (기본값 cols[2])
+            code_idx = 2
+            if rows:
+                hdrs = [c.get_text(strip=True) for c in rows[0].find_all(["th", "td"])]
+                for i, h in enumerate(hdrs):
+                    if "종목코드" in h:
+                        code_idx = i
+                        break
+
+            data = []
+            for row in rows[1:]:
+                cols = row.find_all("td")
+                if len(cols) > code_idx:
+                    name = cols[0].get_text(strip=True)
+                    code = cols[code_idx].get_text(strip=True).strip()
+                    if name and code:
+                        data.append({"Name": name, "Code": code.zfill(6)})
+
+            _df_krx = pd.DataFrame(data, columns=["Name", "Code"])
+            print(f"[KRX] {len(_df_krx)}개 종목 로딩 완료 (종목코드 col={code_idx})")
+        except Exception as e:
+            print(f"[KRX] 로딩 실패: {e}")
+            _df_krx = pd.DataFrame(columns=["Name", "Code"])
     return _df_krx
 
 
