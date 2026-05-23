@@ -20,9 +20,9 @@ def load_krx() -> pd.DataFrame:
         data = []
         for row in rows[1:]:
             cols = row.find_all("td")
-            if len(cols) >= 2:
+            if len(cols) >= 3:
                 name = cols[0].get_text(strip=True)
-                code = str(cols[1].get_text(strip=True)).zfill(6)
+                code = str(cols[2].get_text(strip=True)).zfill(6)
                 if name and code:
                     data.append({"Name": name, "Code": code})
         _df_krx = pd.DataFrame(data, columns=["Name", "Code"])
