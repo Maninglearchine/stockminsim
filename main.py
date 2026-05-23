@@ -35,12 +35,16 @@ def _set_cache(code: str, data: dict, ttl: int = _CACHE_TTL_SECONDS) -> None:
     _cache[code] = (data, datetime.now() + timedelta(seconds=ttl))
 
 
+_LOCAL_MODEL = BASE_DIR / "models" / "KR-FinBert-SC"
+MODEL_PATH = str(_LOCAL_MODEL) if _LOCAL_MODEL.exists() else "snunlp/KR-FinBert-SC"
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("[startup] KRX 종목 데이터 로딩 중...")
     stock_search.load_krx()
-    print("[startup] 감정분석 모델 로딩 중...")
-    analyzer.load_model(str(BASE_DIR / "models" / "KR-FinBert-SC"))
+    print(f"[startup] 감정분석 모델 로딩 중... ({MODEL_PATH})")
+    analyzer.load_model(MODEL_PATH)
     print("[startup] 준비 완료")
     yield
 
@@ -97,7 +101,7 @@ async def analyze_stock(code: str) -> JSONResponse:
     if df_board.empty:
         raise HTTPException(status_code=502, detail="수집된 게시글이 없습니다.")
 
-    model_path = str(BASE_DIR / "models" / "KR-FinBert-SC")
+    model_path = MODEL_PATH
     try:
         result = await loop.run_in_executor(
             _executor,
