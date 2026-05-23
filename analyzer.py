@@ -43,19 +43,8 @@ def analyze(
     local_model_path: str = "./models/KR-FinBert-SC",
     batch_size: int = 32,
     top_n: int = 5,
+    max_length: int = 64,
 ) -> dict:
-    """
-    종목토론방 데이터를 감정분석하여 매수/매도 민심 신호와 근거 TOP N 반환.
-
-    Returns dict:
-        signal: "매수" | "매도"
-        strength: "강함" | "보통" | "약함"
-        confidence: float
-        buy_score: float
-        sell_score: float
-        evidence: list[str]
-        analyzed_count: int
-    """
     load_model(local_model_path)
 
     df = _preprocess(df_board)
@@ -68,7 +57,7 @@ def analyze(
         df["Title"].tolist(),
         batch_size=batch_size,
         truncation=True,
-        max_length=128,
+        max_length=max_length,
         top_k=None,
     )
 

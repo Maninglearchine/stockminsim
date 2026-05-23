@@ -18,21 +18,21 @@ _executor = ThreadPoolExecutor(max_workers=4)
 BASE_DIR = Path(__file__).parent
 
 _cache: dict[str, tuple[dict, datetime]] = {}
-_CACHE_TTL_SECONDS = 300
+_CACHE_TTL_SECONDS = 1800  # 30분
 
 
-def _get_cache(code: str) -> dict | None:
-    entry = _cache.get(code)
+def _get_cache(key: str) -> dict | None:
+    entry = _cache.get(key)
     if entry:
         data, expires_at = entry
         if datetime.now() < expires_at:
             return data
-        del _cache[code]
+        del _cache[key]
     return None
 
 
-def _set_cache(code: str, data: dict, ttl: int = _CACHE_TTL_SECONDS) -> None:
-    _cache[code] = (data, datetime.now() + timedelta(seconds=ttl))
+def _set_cache(key: str, data: dict, ttl: int = _CACHE_TTL_SECONDS) -> None:
+    _cache[key] = (data, datetime.now() + timedelta(seconds=ttl))
 
 
 _LOCAL_MODEL = BASE_DIR / "models" / "KR-FinBert-SC"
@@ -79,13 +79,16 @@ async def search(q: str) -> JSONResponse:
 
 
 @app.get("/api/analyze")
-async def analyze_stock(code: str) -> JSONResponse:
+async def analyze_stock(code: str, pages: int = 10) -> JSONResponse:
     code = str(code).strip().zfill(6)
+    pages = max(1, min(int(pages), 10))
+
     name = stock_search.get_stock_name(code)
     if name is None:
         raise HTTPException(status_code=404, detail="종목을 찾을 수 없습니다.")
 
-    cached = _get_cache(code)
+    cache_key = f"{code}:{pages}"
+    cached = _get_cache(cache_key)
     if cached:
         return JSONResponse({**cached, "cached": True})
 
@@ -93,7 +96,12 @@ async def analyze_stock(code: str) -> JSONResponse:
     try:
         df_board = await loop.run_in_executor(
             _executor,
-            lambda: crawler.crawl_naver_board(code, start_page=1, end_page=10),
+            lambda: crawler.crawl_naver_board(
+                code,
+                start_page=1,
+                end_page=pages,
+                sleep_range=(0.2, 0.5),
+            ),
         )
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"데이터 수집 실패: {e}")
@@ -119,7 +127,8 @@ async def analyze_stock(code: str) -> JSONResponse:
         "evidence": result["evidence"],
         "analyzed_count": result["analyzed_count"],
         "updated_at": datetime.now().strftime("%H:%M"),
+        "pages": pages,
         "cached": False,
     }
-    _set_cache(code, payload)
+    _set_cache(cache_key, payload)
     return JSONResponse(payload)

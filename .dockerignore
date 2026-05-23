@@ -1,0 +1,48 @@
+# 모델 (Docker build 중 다운로드하므로 제외)
+models/
+PWA/models/
+
+# Python 캐시
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+
+# 환경
+.env
+.venv
+venv/
+env/
+
+# 로그
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Claude Code
+.claude/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# 개인 파일
+*.zip
+*.jpg
+*.jpeg
+*.docx
+
+# PWA (별도 배포 대상)
+PWA/
+
+# 로컬 실행 전용
+run.bat
+minsimbot.bat

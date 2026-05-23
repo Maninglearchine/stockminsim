@@ -269,7 +269,7 @@
   <div class="card">
     <p class="section-title">분석 기준</p>
     <ul class="meta-list">
-      <li class="meta-item">최근 종목토론방 10페이지</li>
+      <li class="meta-item" id="analyzedPages">최근 종목토론방 10페이지</li>
       <li class="meta-item">게시글 제목 기준</li>
       <li class="meta-item">추천수 가중치 반영</li>
       <li class="meta-item">AI 감정분석 모델 사용</li>
@@ -338,6 +338,9 @@
 
     document.getElementById('analyzedCount').textContent =
       `분석 게시글 수: ${d.analyzed_count}건`;
+
+    document.getElementById('analyzedPages').textContent =
+      `최근 종목토론방 ${d.pages ?? 10}페이지`;
 
     document.getElementById('resultWrap').style.display = 'flex';
   }

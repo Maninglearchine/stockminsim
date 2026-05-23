@@ -29,11 +29,12 @@ def _decode_html(response) -> tuple[str, str]:
     return dammit.unicode_markup, dammit.original_encoding
 
 
-def crawl_naver_board(stock_code: str, start_page: int = 1, end_page: int = 10) -> pd.DataFrame:
-    """
-    네이버 금융 종목토론방 제목과 추천수 수집.
-    Returns DataFrame with columns: Title, Recommend_Count
-    """
+def crawl_naver_board(
+    stock_code: str,
+    start_page: int = 1,
+    end_page: int = 10,
+    sleep_range: tuple[float, float] = (0.2, 0.5),
+) -> pd.DataFrame:
     stock_code = str(stock_code).zfill(6)
     base_url = "https://finance.naver.com/item/board.naver"
     headers = {
@@ -83,7 +84,8 @@ def crawl_naver_board(stock_code: str, start_page: int = 1, end_page: int = 10) 
 
                 records.append({"Title": title, "Recommend_Count": recommend})
 
-            time.sleep(random.uniform(0.5, 1.2))
+            if page < end_page:
+                time.sleep(random.uniform(*sleep_range))
 
         except Exception as e:
             print(f"[crawler] page {page} error: {e}")
