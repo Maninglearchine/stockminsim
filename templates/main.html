@@ -407,8 +407,9 @@
     if (e.key === 'Enter') doSearch(false);
   });
 
-  // 실시간 자동완성: 300ms 디바운스
+  // 실시간 자동완성: 300ms 디바운스 (직접 타이핑 시 선택 초기화)
   searchInput.addEventListener('input', () => {
+    selectedStock = null;
     clearTimeout(searchDebounce);
     const q = searchInput.value.trim();
     if (!q) {
@@ -428,6 +429,12 @@
   });
 
   async function doSearch(live = false) {
+    // 버튼/엔터: 이미 드롭다운에서 선택된 종목이 있으면 바로 팝업
+    if (!live && selectedStock) {
+      selectStock(selectedStock);
+      return;
+    }
+
     const q = searchInput.value.trim();
     if (!q) return;
 
@@ -477,8 +484,10 @@
         <span class="result-code">${stock.code}</span>
       `;
       item.addEventListener('click', () => {
+        searchInput.value = stock.name;
+        selectedStock = stock;
         searchResults.style.display = 'none';
-        selectStock(stock);
+        searchError.style.display = 'none';
       });
       searchResults.appendChild(item);
     });
