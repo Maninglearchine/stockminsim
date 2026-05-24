@@ -72,6 +72,7 @@
     .search-wrap {
       width: 100%;
       display: flex;
+      flex-direction: column;
       gap: 8px;
     }
 
@@ -90,6 +91,7 @@
     #searchInput::placeholder { color: var(--muted); }
 
     .btn-primary {
+      width: 100%;
       padding: 14px 20px;
       background: var(--btn-bg);
       color: var(--btn-text);
@@ -98,7 +100,6 @@
       font-size: 0.95rem;
       font-weight: 700;
       cursor: pointer;
-      white-space: nowrap;
       transition: opacity 0.2s;
     }
     .btn-primary:active { opacity: 0.8; }
@@ -122,7 +123,6 @@
       border-radius: 12px;
       overflow-x: hidden;
       overflow-y: auto;
-      max-height: 260px;
     }
     #searchResults::-webkit-scrollbar { width: 4px; }
     #searchResults::-webkit-scrollbar-track { background: transparent; }
@@ -394,16 +394,37 @@
   let selectedStock = null;
   let buyMemeIdx = parseInt(sessionStorage.getItem('buyMemeIdx') || '0');
   let sellMemeIdx = parseInt(sessionStorage.getItem('sellMemeIdx') || '0');
+  let searchDebounce = null;
 
   const searchInput = document.getElementById('searchInput');
   const searchResults = document.getElementById('searchResults');
   const searchError = document.getElementById('searchError');
 
   searchInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') doSearch();
+    if (e.key === 'Enter') doSearch(false);
   });
 
-  async function doSearch() {
+  // 실시간 자동완성: 300ms 디바운스
+  searchInput.addEventListener('input', () => {
+    clearTimeout(searchDebounce);
+    const q = searchInput.value.trim();
+    if (!q) {
+      searchResults.style.display = 'none';
+      searchResults.innerHTML = '';
+      searchError.style.display = 'none';
+      return;
+    }
+    searchDebounce = setTimeout(() => doSearch(true), 300);
+  });
+
+  // 드롭다운 외부 클릭 시 닫기
+  document.addEventListener('click', e => {
+    if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+      searchResults.style.display = 'none';
+    }
+  });
+
+  async function doSearch(live = false) {
     const q = searchInput.value.trim();
     if (!q) return;
 
@@ -414,14 +435,16 @@
     try {
       const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`);
       if (!res.ok) {
-        const err = await res.json();
-        showError(err.detail || '검색 결과가 없습니다.');
+        if (!live) {
+          const err = await res.json();
+          showError(err.detail || '검색 결과가 없습니다.');
+        }
         return;
       }
       const data = await res.json();
-      renderResults(data.results);
+      renderResults(data.results, live);
     } catch (e) {
-      showError('검색 중 오류가 발생했습니다.');
+      if (!live) showError('검색 중 오류가 발생했습니다.');
     }
   }
 
@@ -430,13 +453,14 @@
     searchError.style.display = 'block';
   }
 
-  function renderResults(results) {
+  function renderResults(results, live = false) {
     if (!results || results.length === 0) {
-      showError('검색 결과가 없습니다.');
+      if (!live) showError('검색 결과가 없습니다.');
       return;
     }
 
-    if (results.length === 1) {
+    // 버튼/엔터 검색에서 단일 결과면 바로 팝업
+    if (results.length === 1 && !live) {
       selectStock(results[0]);
       return;
     }
