@@ -69,7 +69,7 @@ def search_stock(user_input: str) -> list[dict]:
 
     return [
         {"code": row["Code"], "name": row["Name"]}
-        for _, row in result.head(10).iterrows()
+        for _, row in result.head(50).iterrows()
     ]
 
 
